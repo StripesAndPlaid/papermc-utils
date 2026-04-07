@@ -4,7 +4,7 @@ SERVER_DIR="/home/minecraft/server"
 BACKUP_DIR="/home/minecraft/backup"
 
 usage() {
-  echo "Usage: $(basename "$0") [-f] [archive]"
+  echo "Usage: $(basename "$0") [-f] [-l] archive"
   echo
   echo "Options:"
   echo "  -f       Force restart server without confirmation"

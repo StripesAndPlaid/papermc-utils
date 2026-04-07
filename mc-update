@@ -9,7 +9,7 @@ usage() {
   echo "Usage: $(basename "$0") [version]"
   echo
   echo "Options:"
-  echo "  version  PaperMC version to update to (uses latest if not specified)"
+  echo "  version  PaperMC version to update to"
   exit 1
 }
 
