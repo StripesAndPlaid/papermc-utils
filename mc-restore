@@ -27,7 +27,7 @@ restore() {
 }
 
 confirm() {
-  echo "Restoring \"$1\" will remove all current server data."
+  echo "Warning: Restoring \"$1\" will erase all current server data"
   read -rp "Do you wish to continue? [y/N] " confirm
   [[ "$confirm" =~ ^[Yy]$ ]]
 }
@@ -80,6 +80,6 @@ else
   if [[ $force == true ]] || confirm "$filename"; then
     restore "$filename"
   else
-    echo "Aborting..."
+    echo "Restore cancelled"
   fi
 fi
