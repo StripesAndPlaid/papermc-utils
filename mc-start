@@ -5,7 +5,7 @@ MEMORY_MIN="8G"
 MEMORY_MAX="8G"
 
 # Aikar's recommended JVM flags
-jvm_flags=(
+JVM_FLAGS=(
   -XX:+AlwaysPreTouch
   -XX:+DisableExplicitGC
   -XX:+ParallelRefProcEnabled
@@ -31,7 +31,7 @@ jvm_flags=(
 # Check if server is already running
 if ! screen -ls | grep -qF "minecraft-server"; then
   echo "Starting server..."
-  screen -dmS minecraft-server bash -c "cd '$SERVER_DIR' && java -Xms$MEMORY_MIN -Xmx$MEMORY_MAX ${jvm_flags[*]} -jar paper.jar nogui"
+  screen -dmS minecraft-server bash -c "cd '$SERVER_DIR' && java -Xms$MEMORY_MIN -Xmx$MEMORY_MAX ${JVM_FLAGS[*]} -jar paper.jar --nogui"
 else
   echo "Server is already running"
 fi
