@@ -24,7 +24,7 @@ save_world() {
   send_to_server "save-off" # Disable autosave
   send_to_server "save-all flush" # Save world manually
 
-  while (( elapsed <= $timeout )); do
+  while ((elapsed <= $timeout)); do
     printf "\rSaving world (%d/%ds)... " $elapsed $timeout
 
     # Check log file for "Saved the game" message
@@ -34,7 +34,7 @@ save_world() {
       return
     fi
 
-    sleep 1 && (( elapsed++ ))
+    sleep 1 && ((elapsed++))
   done
 
   send_to_server "save-on"

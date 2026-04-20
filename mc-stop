@@ -13,7 +13,7 @@ screen -S minecraft-server -X stuff "stop^M"
 # Wait for the server to exit cleanly
 while screen -ls | grep -qF "minecraft-server"; do
   printf "\rStopping server (%d/%ds)... " $SECONDS $TIMEOUT
-  if (( SECONDS >= TIMEOUT )); then
+  if ((SECONDS >= TIMEOUT)); then
     printf "\nError: Server did not stop within $TIMEOUT seconds\n"
     exit 1
   fi
