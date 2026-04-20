@@ -79,7 +79,7 @@ else
     usage
   fi
 
-  echo "Checking for ${channel,,} builds..."
+  echo "Checking version $1 for ${channel,,} builds..."
   papermc_url=$(get_url "$builds_response")
   found_build=$(get_build_id "$builds_response")
   found_version="$1"
