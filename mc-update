@@ -6,10 +6,11 @@ SERVER_JAR="/home/minecraft/server/paper.jar"
 VERSION_FILE="/home/minecraft/server/version_history.json"
 
 usage() {
-  echo "Usage: $(basename "$0") [version]"
+  echo "Usage: $(basename "$0") [-a] [version]"
   echo
   echo "Options:"
-  echo "  version  PaperMC version to update to"
+  echo "  -a       Use alpha builds"
+  echo "  version  PaperMC version"
   exit 1
 }
 
@@ -18,12 +19,22 @@ get_builds() {
 }
 
 get_url() {
-  echo "$1" | jq -r 'first(.[] | select(.channel == "STABLE") | .downloads."server:default".url) // "null"'
+  echo "$1" | jq -r --arg channel "$channel" 'first(.[] | select(.channel == $channel) | .downloads."server:default".url) // "null"'
 }
 
 get_build_id() {
-  echo "$1" | jq -r 'first(.[] | select(.channel == "STABLE") | .id) // "null"'
+  echo "$1" | jq -r --arg channel "$channel" 'first(.[] | select(.channel == $channel) | .id) // "null"'
 }
+
+# Parse flags
+channel="STABLE"
+while getopts ":a" opt; do
+  case $opt in
+    a) channel="ALPHA" ;;
+    *) usage ;;
+  esac
+done
+shift $((OPTIND - 1))
 
 # Check if jq is installed
 if ! command -v jq >/dev/null 2>&1; then
@@ -33,13 +44,13 @@ fi
 
 # Check if the server is running
 if screen -ls | grep -qF "minecraft-server"; then
-  echo "Error: Server is running. Stop it before updating."
+  echo "Error: Server is running"
   exit 1
 fi
 
 # Determine target version
 if [[ $# -eq 0 ]]; then
-  echo "No version specified, searching for latest version with stable build..."
+  echo "No version specified, searching for latest ${channel,,} build..."
 
   versions=$(curl -s -H "User-Agent: $USER_AGENT" "$PAPER_API" | \
     jq -r '.versions | to_entries[] | .value[]' | \
@@ -55,7 +66,7 @@ if [[ $# -eq 0 ]]; then
       papermc_url="$stable_url"
       found_build="$stable_build"
       found_version="$version"
-      echo "Found stable build for version $version"
+      echo "Found ${channel,,} build for version $version"
       break
     fi
   done
@@ -68,14 +79,13 @@ else
     usage
   fi
 
-  # Try to find a stable build for the requested version
-  echo "Checking for stable builds..."
+  echo "Checking for ${channel,,} builds..."
   papermc_url=$(get_url "$builds_response")
   found_build=$(get_build_id "$builds_response")
   found_version="$1"
 
   if [[ "$papermc_url" == "null" ]]; then
-    echo "Error: No stable build for version $1"
+    echo "Error: No ${channel,,} build for version $1"
     exit 1
   fi
 fi
@@ -93,18 +103,18 @@ fi
 
 # Display current and new version info
 echo
-echo "Current Version: $current_version (Build $current_build)"
-echo "New Version:     $found_version (Build $found_build)"
+echo "Current version: $current_version (build $current_build)"
+echo "New version:     $found_version (build $found_build) [${channel,,}]"
 echo
 
 # Check if already up to date
 if [[ "$current_version" == "$found_version" && "$current_build" == "$found_build" ]]; then
-  echo "You are running the latest stable build"
+  echo "You are running the latest ${channel,,} build"
   exit 0
 fi
 
 # Confirmation prompt
-read -rp "Update to $found_version (Build $found_build)? [y/N]: " confirm
+read -rp "Update to $found_version (build $found_build)? [y/N]: " confirm
 if [[ "$confirm" =~ ^[Yy]$ ]]; then
   printf "Downloading server jar... "
   curl -s -H "User-Agent: $USER_AGENT" "$papermc_url" -o "$SERVER_JAR"
