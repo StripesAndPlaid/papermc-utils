@@ -32,21 +32,15 @@ confirm() {
   [[ "$confirm" =~ ^[Yy]$ ]]
 }
 
+# Parse flags
 while getopts ":fl" opt; do
   case "$opt" in
-    f)
-      force=true
-      ;;
-    l)
-      latest=true
-      ;;
-    ?)
-      echo "Invalid option: -$OPTARG" >&2
-      usage
-      ;;
+    f) force=true ;;
+    l) latest=true ;;
+    ?) echo "Invalid option: -$OPTARG" && usage ;;
   esac
 done
-shift $(( OPTIND - 1 )) # Move to the next non-option argument
+shift $((OPTIND - 1))
 
 if [[ $latest == true ]]; then
   if [[ $(ls "$BACKUP_DIR" | wc -l) -eq 0 ]]; then
@@ -57,12 +51,10 @@ if [[ $latest == true ]]; then
   filename=$(ls -td $BACKUP_DIR/* | head -n 1)
 else
   if [[ $# -eq 0 ]]; then
-    echo "Error: No archive file provided"
-    usage
+    echo "Error: No archive file provided" && usage
   fi
   if [[ ! -f "$1" ]]; then
-    echo "Error: Archive file \"$1\" does not exist"
-    usage
+    echo "Error: Archive file \"$1\" does not exist" && usage
   fi
   filename=$1
 fi
