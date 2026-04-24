@@ -70,7 +70,7 @@ fi
 
 # Create a new backup
 printf "Creating backup... "
-tar -czf "$BACKUP_DIR/$(date +%F-%H-%M-%S).tgz" -C "$SERVER_DIR" "world" "world_nether" "world_the_end"
+tar -czf "$BACKUP_DIR/$(date +%F-%H-%M-%S).tgz" -C "$SERVER_DIR" "world"
 echo "done!"
 
 # Re-enable autosave

@@ -16,7 +16,7 @@ usage() {
 restore() {
   printf "Restoring $1... "
 
-  rm -r "$SERVER_DIR/world" "$SERVER_DIR/world_nether" "$SERVER_DIR/world_the_end"
+  rm -rf "$SERVER_DIR/world"
 
   if tar -xzf "$1" -C "$SERVER_DIR"; then
     echo "done!"
