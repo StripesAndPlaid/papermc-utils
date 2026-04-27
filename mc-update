@@ -69,7 +69,7 @@ if [[ $# -eq 0 ]]; then
   for version in $versions; do
     builds=$(get_builds "$version")
     download_url=$(get_download_url "$builds")
-    
+
     if [[ "$download_url" != "null" ]]; then
       new_version="$version"
       new_build=$(get_build "$builds")
@@ -78,7 +78,7 @@ if [[ $# -eq 0 ]]; then
   done
 else
   new_version="$1"
-  
+
   builds=$(get_builds "$1")
   if echo "$builds" | jq -e '.ok == false' > /dev/null 2>&1; then
     error_msg=$(echo "$builds" | jq -r '.message // "Unknown error"')
