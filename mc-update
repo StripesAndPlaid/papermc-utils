@@ -6,32 +6,42 @@ SERVER_JAR="/home/minecraft/server/paper.jar"
 VERSION_FILE="/home/minecraft/server/version_history.json"
 
 usage() {
-  echo "Usage: $(basename "$0") [-a] [version]"
+  echo "Usage: $(basename "$0") [-a|-b] [version]"
   echo
   echo "Options:"
-  echo "  -a       Use alpha builds"
+  echo "  -a       Select ALPHA channel builds"
+  echo "  -b       Select BETA channel builds"
   echo "  version  PaperMC version"
   exit 1
+}
+
+select_channel() {
+  if [[ "$channel" != "STABLE" ]]; then
+    echo "Error: Select only 1 build channel" && usage
+  fi
+
+  channel="$1"
 }
 
 get_builds() {
   curl -s -H "User-Agent: $USER_AGENT" "${PAPER_API}/versions/${1}/builds"
 }
 
-get_url() {
-  echo "$1" | jq -r --arg channel "$channel" 'first(.[] | select(.channel == $channel) | .downloads."server:default".url) // "null"'
+get_build() {
+  echo "$1" | jq -r --arg channel "$channel" 'first(.[] | select(.channel == $channel) | .id) // "null"'
 }
 
-get_build_id() {
-  echo "$1" | jq -r --arg channel "$channel" 'first(.[] | select(.channel == $channel) | .id) // "null"'
+get_download_url() {
+  echo "$1" | jq -r --arg channel "$channel" 'first(.[] | select(.channel == $channel) | .downloads."server:default".url) // "null"'
 }
 
 # Parse flags
 channel="STABLE"
-while getopts ":a" opt; do
+while getopts ":ab" opt; do
   case $opt in
-    a) channel="ALPHA" ;;
-    *) usage ;;
+    a) select_channel "ALPHA" ;;
+    b) select_channel "BETA" ;;
+    *) echo "Error: Invalid argument: -$OPTARG" && usage ;;
   esac
 done
 shift $((OPTIND - 1))
@@ -48,43 +58,38 @@ if screen -ls | grep -qF "minecraft-server"; then
   exit 1
 fi
 
+echo "Checking for update..."
+
 # Determine target version
 if [[ $# -eq 0 ]]; then
-  echo "No version specified, searching for latest ${channel,,} build..."
-
   versions=$(curl -s -H "User-Agent: $USER_AGENT" "$PAPER_API" | \
     jq -r '.versions | to_entries[] | .value[]' | \
     sort -V -r)
 
   for version in $versions; do
-    version_builds=$(get_builds "$version")
-
-    stable_url=$(get_url "$version_builds")
-    stable_build=$(get_build_id "$version_builds")
-
-    if [[ "$stable_url" != "null" ]]; then
-      papermc_url="$stable_url"
-      found_build="$stable_build"
-      found_version="$version"
-      echo "Found ${channel,,} build for version $version"
+    builds=$(get_builds "$version")
+    download_url=$(get_download_url "$builds")
+    
+    if [[ "$download_url" != "null" ]]; then
+      new_version="$version"
+      new_build=$(get_build "$builds")
       break
     fi
   done
 else
-  builds_response=$(get_builds "$1")
-
-  if echo "$builds_response" | jq -e '.ok == false' > /dev/null 2>&1; then
-    error_msg=$(echo "$builds_response" | jq -r '.message // "Unknown error"')
+  new_version="$1"
+  
+  builds=$(get_builds "$1")
+  if echo "$builds" | jq -e '.ok == false' > /dev/null 2>&1; then
+    error_msg=$(echo "$builds" | jq -r '.message // "Unknown error"')
     echo "Error: $error_msg"
     usage
   fi
 
-  echo "Checking version $1 for ${channel,,} builds..."
-  papermc_url=$(get_url "$builds_response")
-  found_build=$(get_build_id "$builds_response")
-  found_version="$1"
+  new_build=$(get_build "$builds")
+  download_url=$(get_download_url "$builds")
 
-  if [[ "$papermc_url" == "null" ]]; then
+  if [[ "$download_url" == "null" ]]; then
     echo "Error: No ${channel,,} build for version $1"
     exit 1
   fi
@@ -104,20 +109,20 @@ fi
 # Display current and new version info
 echo
 echo "Current version: $current_version (build $current_build)"
-echo "New version:     $found_version (build $found_build) [${channel,,}]"
+echo "New version:     $new_version (build $new_build) [${channel,,}]"
 echo
 
 # Check if already up to date
-if [[ "$current_version" == "$found_version" && "$current_build" == "$found_build" ]]; then
+if [[ "$current_version" == "$new_version" && "$current_build" == "$new_build" ]]; then
   echo "You are running the latest ${channel,,} build"
   exit 0
 fi
 
 # Confirmation prompt
-read -rp "Update to $found_version (build $found_build)? [y/N]: " confirm
+read -rp "Update to $new_version (build $new_build)? [y/N]: " confirm
 if [[ "$confirm" =~ ^[Yy]$ ]]; then
   printf "Downloading server jar... "
-  curl -s -H "User-Agent: $USER_AGENT" "$papermc_url" -o "$SERVER_JAR"
+  curl -s -H "User-Agent: $USER_AGENT" "$download_url" -o "$SERVER_JAR"
   echo "done!"
 else
   echo "Update cancelled"
